@@ -1,235 +1,348 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <time.h>
-#include <stdbool.h>
+#include <stdlib.h>
 
-#define DECK_SIZE 52
-#define MAX_HAND_SIZE 10
-
-int deck[DECK_SIZE];
-int num_cards_in_deck = 0;
-
-int player_hand[MAX_HAND_SIZE];
-int num_cards_in_player_hand = 0;
-
-int dealer_hand[MAX_HAND_SIZE];
-int num_cards_in_dealer_hand = 0;
-
-void initialize_deck()
+int shuff(int cards[])
 {
-    // Initialize the deck with all cards in order
-    for (int i = 0; i < DECK_SIZE; i++)
-    {
-        deck[i] = i;
-    }
-    num_cards_in_deck = DECK_SIZE;
+	
+	int t;
+	int i;
+	int desk[52];	
+	for (i=0;i<52;i++)
+		desk[i] = (i/13+3)*100 + i%13 + 1;
+
+	srand(time(NULL));
+	for (i = 0; i < 52; i++)
+	{
+		do
+		{
+			t = rand() % 52;
+		} while (desk[t] == 0);
+		cards[i] = desk[t];
+		desk[t] = 0;
+	}
+	
+	return 0;
 }
 
-void shuffle_deck()
+int convert_jkq(int a)
 {
-    // Shuffle the deck using the Fisher-Yates shuffle algorithm
-    for (int i = num_cards_in_deck - 1; i > 0; i--)
-    {
-        int j = rand() % (i + 1);
-        int temp = deck[i];
-        deck[i] = deck[j];
-        deck[j] = temp;
-    }
+	if ((a%100==11) ||(a%100==12) ||(a%100==13)) return (a/100)*100+10;
+	else return a;
 }
 
-int get_card_value(int card)
+void pic(int num)
 {
-    // Get the value of a card, with face cards worth 10 and aces worth 1 or 11
-    int value = (card % 13) + 1;
-    if (value > 10)
-    {
-        value = 10;
-    }
-    if (value == 1)
-    {
-        // Check if the ace should be worth 11
-        int hand_value = 0;
-        for (int i = 0; i < num_cards_in_player_hand; i++)
-        {
-            int card_value = get_card_value(player_hand[i]);
-            hand_value += card_value;
-        }
-        if (hand_value + 11 <= 21)
-        {
-            value = 11;
-        }
-    }
-    return value;
+	char fl;
+	int po_num;
+	
+	fl = num / 100;
+	po_num = num % 100;
+	switch (po_num)
+	{
+		case 1: 
+		{
+			printf("*******\n");
+			printf("*     *\n");
+			printf("* %c   *\n", fl);
+			printf("*   A *\n");
+			printf("*     *\n");
+			printf("*******\n");
+			break;
+		}
+		case 2:
+		case 3:
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+		case 8:
+		case 9:
+		case 10:
+		{
+			printf("*******\n");
+			printf("*     *\n");
+			printf("* %c   *\n", fl);
+			printf("*  %2d *\n", po_num);
+			printf("*     *\n");
+			printf("*******\n");
+			break;
+		}
+		case 11:
+		{
+			printf("*******\n");
+			printf("*     *\n");
+			printf("* %c   *\n", fl);
+			printf("*   J *\n");
+			printf("*     *\n");
+			printf("*******\n");
+			break;
+		}
+		case 12:
+		{
+			printf("*******\n");
+			printf("*     *\n");
+			printf("* %c   *\n", fl);
+			printf("*   Q *\n");
+			printf("*     *\n");
+			printf("*******\n");
+			break;
+		}
+		case 13:
+		{
+			printf("*******\n");
+			printf("*     *\n");
+			printf("* %c   *\n", fl);
+			printf("*   K *\n");
+			printf("*     *\n");
+			printf("*******\n");
+			break;
+		}
+
+	}
 }
 
-void deal_card(int hand[], int *num_cards_in_hand)
+int play(void)
 {
-    // Deal a card from the deck and add it to the specified hand
-    int card = deck[num_cards_in_deck - 1];
-    hand[*num_cards_in_hand] = card;
-    (*num_cards_in_hand)++;
-    num_cards_in_deck--;
+	int i;
+	int psum=0;
+	int bsum=0;
+	int pcards[5]={0};
+	int bcards[5]={0};
+	int cards[52];
+	char go_on;
+	char d;
+	
+	printf("Welcome to SimpleBlackJack!\n"
+	"Anytime you can press Ctrl+C to exit.\n"
+	"Enjoy! Press Enter to go on......\n");
+	do{
+		go_on = getchar();
+	} while (go_on != '\n');
+	printf("\n");
+	
+	//shuff the cards
+	shuff(cards);
+
+	//give the cards
+	pcards[0]=cards[0];
+	pcards[1]=cards[1];
+	bcards[0]=cards[2];
+	bcards[1]=cards[3];
+	
+	//the 2 cards player get
+	printf("One of computer's cards:\n");
+	pic(bcards[0]);
+	printf("\n");
+	printf("Cards of player:\n");
+	pic(pcards[0]);
+	//printf("\n");
+	pic(pcards[1]);
+	//printf("\n");
+	
+	i=0;
+	for (i=0; i<2; i++)
+	{
+		if (pcards[i]%100 == 1)
+		{
+			printf("choose A value of the card %d, input 'y' for 11 or 'n' for 1 :\n", i+1);
+			do{
+				d = getchar();
+			} while (d!='y' && d!='n');
+			
+			if (d == 'y')
+			{
+				printf("You've chosen value 11 for card A.\n");
+				psum = psum + 11;
+			}
+			else if(d == 'n')
+			{
+				printf("You've chosen value 1 for card A.\n");
+				psum = psum +1;
+			}
+		}
+		else if (convert_jkq(pcards[i]) %100 ==10) psum = psum + 10;
+		else psum = psum + pcards[i]%100;
+		
+		if (psum > 21)
+		{
+			printf("Sum of player's cards now:%d\n\n",psum);
+			printf("Computer win!\n");
+			return 1;
+		}
+		else if (psum == 21)
+		{
+			printf("Sum of player's cards now:%d\n\n",psum);
+			printf("Player win!\n");
+			return 0;
+		}
+	}
+	printf("Sum of player's cards now:%d\n\n",psum);
+	
+	//whether player get another cards
+	i=0;
+	for (i=0; i<3; i++)
+	{
+		char j = 'n';
+		
+		printf("Want more cards? Input y or n:\n");
+		do{
+			j = getchar();
+		} while (j!='y' &&j!='n');
+		
+		if (j=='y')
+		{
+			printf("You've got another card now.\n");
+			pcards[i+2]=cards[i+4];
+			printf("and your card %d is:\n", i+3);
+			pic(pcards[i+2]);
+			
+			if (pcards[i+2]%100 == 1)
+			{
+				printf("Choose A value of the card %d, input 'y' for 11 or 'n' for 1:\n", i+3);
+				do{
+					d = getchar();
+				} while (d!='y' && d!='n');	
+				if (d == 'y')
+				{
+					printf("You've chosen value 11 for card A.\n");
+					psum = psum + 11;
+				}
+				else if(d == 'n')
+				{
+					printf("You've chosen value 1 for card A.\n");
+					psum = psum +1;
+				}
+			}
+			else if (convert_jkq(pcards[i+2]) %100 ==10) psum = psum + 10;
+			else psum = psum + pcards[i+2]%100;
+			
+			if (psum > 21)
+			{
+				printf("Sum of player's cards now:%d\n\n",psum);
+				printf("Computer win!\n");
+				return 1;
+			}
+			else if (psum == 21)
+			{
+				printf("Sum of player's cards now:%d\n\n",psum);
+				printf("Player win!\n");
+				return 0;
+			}		
+			else printf("Sum of player's cards now:%d\n\n",psum);
+		}
+		else 
+		{
+			printf("Sum of player's cards now:%d\n\n",psum);
+			break;
+		}
+	}
+	if (i == 3)
+	{
+		printf("Player win! Because the sum of your 5 cards is no larger than 21! So lucky!\n");
+		return 0;
+	}
+	
+	//the 2 cards of boss/computer
+	//i=0;
+	printf("Computer's cards:\n");
+	pic(bcards[0]);
+	pic(bcards[1]);
+
+	if (bcards[0]%100 + bcards[1]%100 == 2)
+	{
+		bsum=12; //two A cards
+		printf("Sum of computer's cards now:%d\n\n", bsum);
+	}
+	else if ((convert_jkq(bcards[0]))%100 + (convert_jkq(bcards[1]))%100 ==1)
+	{
+		bsum=21;
+		printf("Sum of computer's cards now:%d\n\n", bsum);
+		printf("Computer win!\n");
+		return 1;
+	}
+	else if (bcards[0]%100==1 || bcards[1]%100==1)
+	{
+		bsum=(bcards[0]+bcards[1])%100+(rand()%2)*10;
+		printf("Sum of computer's cards now:%d\n\n", bsum);
+	}
+	else
+	{
+		bsum = (convert_jkq(bcards[0]))%100 + (convert_jkq(bcards[1]))%100;
+		printf("Sum of computer's cards now:%d\n\n", bsum);
+	}
+	
+	//whether computer get another cards until bsum>16
+	//i=0;
+	for (i=0; i<3 && bsum<17; i++)
+	{
+		bcards[i+2]=cards[i+7];
+		printf("Computer's card %d is:\n", i+3);
+		pic(bcards[i+2]);
+		
+		if (bcards[i+2]%100 == 1)
+		{
+			if (bsum+11 <= 21)
+			{
+				printf("Computer has chosen A as 11\n");
+				bsum = bsum+11;
+				printf("Sum of computer's cards now:%d\n\n", bsum);
+			}
+			else
+			{
+				printf("Computer has chosen A as 1\n");
+				bsum = bsum+1;
+				printf("Sum of computer's cards now:%d\n\n", bsum);
+			}
+		}
+		else
+		{
+			bsum = bsum + convert_jkq(bcards[i+2])%100;
+			printf("Sum of computer's cards now:%d\n\n", bsum);
+		}
+	}
+	if (i == 3)
+	{
+		printf("Computer win! Because the sum of its 5 cards is no larger than 21! So lucky!\n");
+		return 1;
+	}
+	
+	//the last step
+	if (bsum>21 || psum>bsum)
+	{
+		printf("Player win!\n");
+		return 0;
+	}
+	else if (psum == bsum)
+	{
+		printf("Oh, player and computer get the same score!\n");
+		return 3;
+	}
+	else if (psum < bsum)
+	{
+		printf("Computer win!\n");
+		return 1;
+	}
+		
+	return 3;
 }
 
-void print_hand(int hand[], int num_cards_in_hand)
+int main(void)
 {
-    // Print the specified hand
-    for (int i = 0; i < num_cards_in_hand; i++)
-    {
-        int card = hand[i];
-        int rank = (card % 13) + 1;
-        char suit;
-        switch (card / 13)
-        {
-        case 0:
-            suit = 'C';
-            break;
-        case 1:
-            suit = 'D';
-            break;
-        case 2:
-            suit = 'H';
-            break;
-        case 3:
-            suit = 'S';
-            break;
-        }
-        printf("%d%c ", rank, suit);
-    }
-    printf("\n");
-}
-
-int get_hand_value(int hand[], int num_cards_in_hand)
-{
-    // Get the value of the specified hand
-    int value = 0;
-    int num_aces = 0;
-    for (int i = 0; i < num_cards_in_hand; i++)
-    {
-        int card_value = get_card_value(hand[i]);
-        value += card_value;
-        if (card_value == 1)
-        {
-            num_aces++;
-        }
-    }
-    // Check if any aces should be worth 11
-    for (int i = 0; i < num_aces; i++)
-    {
-        if (value + 10 <= 21)
-        {
-            value += 10;
-        }
-    }
-    return value;
-}
-
-bool player_turn()
-{
-    char choice;
-    while (true)
-    {
-        cout << "Do you want to hit or stand? (h/s) ";
-        cin >> choice;
-        if (choice == 'h')
-        {
-            draw_card(player_hand);
-            print_hand(player_hand, "Player");
-            if (hand_value(player_hand) > 21)
-            {
-                cout << "You busted! Dealer wins." << endl;
-                return false;
-            }
-        }
-        else if (choice == 's')
-        {
-            cout << "Player stands." << endl;
-            return true;
-        }
-        else
-        {
-            cout << "Invalid input. Please enter 'h' or 's'." << endl;
-        }
-    }
-}
-
-void dealer_turn()
-{
-    cout << endl
-         << "Dealer's turn." << endl;
-    print_hand(dealer_hand, "Dealer");
-    while (hand_value(dealer_hand) < 17)
-    {
-        draw_card(dealer_hand);
-        print_hand(dealer_hand, "Dealer");
-        if (hand_value(dealer_hand) > 21)
-        {
-            cout << "Dealer busted! Player wins." << endl;
-            return;
-        }
-    }
-    cout << "Dealer stands." << endl;
-}
-
-void play_game()
-{
-    bool player_wins = false;
-    initialize_deck();
-    shuffle_deck();
-    deal_cards();
-    print_hand(player_hand, "Player");
-    print_dealer_hand();
-
-    // Player's turn
-    if (player_turn())
-    {
-        // Dealer's turn
-        dealer_turn();
-
-        // Determine winner
-        int player_hand_value = hand_value(player_hand);
-        int dealer_hand_value = hand_value(dealer_hand);
-        if (player_hand_value > dealer_hand_value || dealer_hand_value > 21)
-        {
-            cout << "Player wins!" << endl;
-            player_wins = true;
-        }
-        else if (player_hand_value == dealer_hand_value)
-        {
-            cout << "It's a tie!" << endl;
-        }
-        else
-        {
-            cout << "Dealer wins." << endl;
-        }
-    }
-
-    // Calculate the score
-    int score = 0;
-    if (player_wins)
-    {
-        score += 10;
-        if (hand_value(player_hand) == 21)
-        {
-            score += 5;
-        }
-    }
-    else
-    {
-        score -= 10;
-    }
-    cout << "Score: " << score << endl;
-}
-
-int main()
-{
-    srand(time(NULL));
-    char play_again;
-    do
-    {
-        play_game();
-        cout << "Do you want to play again? (y/n) ";
-        cin >> play_again;
-    } while (play_again == 'y');
-    return 0;
+	char again;
+  
+	play();
+  
+	printf("\nAnd now would you like to play again? Input 'y' or 'n':\n");
+	do{
+		again = getchar();
+	} while (again!='y' && again!='n');
+   
+	if (again == 'y')
+	{
+		printf("\nOK, let's go again!\n\n");
+		main();
+	}
+  
+	return 0;
 }
