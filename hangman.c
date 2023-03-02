@@ -1,81 +1,130 @@
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
+#include <stdio.h> 
+#include <string.h> 
+#include <stdlib.h> 
+#include <ctype.h> 
+#include <termio.h> 
+#include <time.h> 
+static struct termios old, new; 
+void initTermios(int echo) { 
+  tcgetattr(0, &old);  
+  new = old;  
+  new.c_lflag &= ~ICANON;  
+  new.c_lflag &= echo ? ECHO : ~ECHO;  
+  tcsetattr(0, TCSANOW, &new);  
+} 
+void resetTermios(void) { tcsetattr(0, TCSANOW, &old); } 
+char getch_(int echo) { 
+  initTermios(echo); 
+  char ch = getchar(); 
+  resetTermios(); 
+  return ch; 
+} 
+char getch(void) { return getch_(0); } 
+char getche(void) {	return getch_(1); } 
+typedef struct {int wg; char ws[7];} Game; 
+void display(const Game *game, const char *guess){ 
+	int wg=game->wg; 
+        printf("\n\t Be aware you can be hanged!!.");
+         //Ascii Art
+        printf("       _                                             \n");
+        printf("      | |                                            \n");
+        printf("      | |__   __ _ _ __   __ _ _ __ ___   __ _ _ __  \n");
+        printf("      | '_ \\ / _` | '_ \\ / _` | '_ ` _ \\ / _` | '_ \\ \n");
+        printf("      | | | | (_| | | | | (_| | | | | | | (_| | | | | \n");
+        printf("      |_| |_|\\__,_|_| |_|\\__, |_| |_| |_|\\__,_|_| |_| \n");
+        printf("                          __/ |                      \n");
+        printf("                         |___/  \n");
+        printf("      ");
+        printf("                coded by R3DHULK ");
+	printf("\n\n\t Rules : ");
+	printf("\n\t - Maximum 6 mistakes are allowed.");
+	printf("\n\t - All alphabet are in lower case.");
+	printf("\n\t - All words are name of very popular Websites. eg. Google");
+	printf("\n\t - If you enjoy continue, otherwise close it.");
 
-#define MAX_WRONG_GUESSES 6
-#define WORDS_COUNT 5
-
-const char* WORDS[WORDS_COUNT] = {
-    "computer",
-    "programming",
-    "algorithm",
-    "database",
-    "software"
-};
-
-int main() {
-    // Select a random word from the list
-    const char* word = WORDS[rand() % WORDS_COUNT];
-    int word_len = strlen(word);
-
-    // Initialize the guessed word with underscores
-    char guessed_word[word_len+1];
-    memset(guessed_word, '_', word_len);
-    guessed_word[word_len] = '\0';
-
-    // Keep track of guessed letters and wrong guesses
-    int wrong_guesses = 0;
-    char guessed_letters[26] = {0};
-    int guessed_letters_count = 0;
-
-    printf("Welcome to Hangman!\n");
-    printf("The word has %d letters. You have %d wrong guesses.\n", word_len, MAX_WRONG_GUESSES);
-
-    // Loop until the player guesses the word or runs out of guesses
-    while (wrong_guesses < MAX_WRONG_GUESSES && strcmp(guessed_word, word) != 0) {
-        // Print the current state of the guessed word
-        printf("Guess the word: %s\n", guessed_word);
-
-        // Print the guessed letters
-        printf("Guessed letters: ");
-        for (int i = 0; i < guessed_letters_count; i++) {
-            printf("%c ", guessed_letters[i]);
-        }
-        printf("\n");
-
-        // Ask the player for a letter
-        printf("Enter a letter: ");
-        char letter;
-        scanf(" %c", &letter);
-
-        // Check if the letter has already been guessed
-        if (isalpha(letter) && !strchr(guessed_letters, letter)) {
-            guessed_letters[guessed_letters_count++] = letter;
-
-            // Check if the letter is in the word
-            int found = 0;
-            for (int i = 0; i < word_len; i++) {
-                if (word[i] == letter) {
-                    guessed_word[i] = letter;
-                    found = 1;
-                }
-            }
-
-            if (!found) {
-                printf("Sorry, '%c' is not in the word.\n", letter);
-                wrong_guesses++;
-            }
-        } else {
-            printf("Please enter a valid letter that has not been guessed before.\n");
-        }
-    }
-
-    // Print the final result
-    if (wrong_guesses == MAX_WRONG_GUESSES) {
-        printf("Sorry, you ran out of guesses. The word was '%s'.\n", word);
-    } else {
-        printf("Congratulations, you guessed the word '%s'!\n", word);
-    }
-
-    return 0;
-}
+	printf("\033[H\033[J ┏━━━┓\n"); 
+	printf(" ┃   │\n"); 
+	printf(" ┃   %c\n",   wg<1?' ':'O'); 
+	printf(" ┃  %c%s%c\n",wg<3?' ':'/', wg<2?" ":"│", wg<4?' ':'\\'); 
+	printf(" ┃  %c %c\n", wg<5?' ':'/',               wg<6?' ':'\\'); 
+	printf(" ┃\n"); 
+	printf("┏┻━━━━━━┓\n┃       ┗━┓\n┗━━━━━━━━━┛\n"); 
+	printf("wrong guesses %d: %s\n", wg, game->ws); 
+	printf("word: %s\n",guess); 
+} 
+typedef struct{ size_t word, words, *index; char *buffer; } Buffer; 
+Buffer readwords(const char *fn){ 
+    char buffer[512]; 
+    char *bp, *wi, *wl; 
+    size_t size, elements, bytes, wlen=0, ilen, len; 
+    FILE *stream, *tstream; 
+	FILE *fp=fopen(fn, "r"); 
+	stream=open_memstream(&bp, &size); 
+    do { 
+        bytes = fread(buffer, sizeof(char), sizeof buffer, fp); 
+        fwrite(buffer, sizeof(char), bytes, stream); 
+    } while (bytes == sizeof buffer && !feof(fp)); 
+    fflush(stream); fclose(stream); 
+	stream=open_memstream(&wi, &ilen); 
+	tstream=open_memstream(&wl, &bytes); 
+	for(char *tok=strtok(bp, "\n"); tok; tok=strtok(NULL, "\n")){ 
+		len=strlen(tok); 
+		if(len<3 || len>50) continue; // longest word in major dict  has 45 words, rest are chemicals 
+		for(char *p=tok; *p; ++p){ 
+			if(isalpha(*p)) *p=tolower(*p); 
+			else goto next; 
+		} 
+		fwrite(&wlen, sizeof wlen, 1, stream); 
+		wlen+=fprintf(tstream, "%s", tok); 
+		fputc(0, tstream); 
+		wlen++; 
+next:; 
+	} 
+	fflush(tstream); fclose(tstream); 
+	fflush(stream);  fclose(stream); 
+	free(bp); 
+	return (Buffer){.words=ilen/sizeof ilen, .index=(size_t *)wi, .buffer=wl}; 
+} 
+int shuffle(Buffer *buf){ 
+	size_t rnd, tmp; 
+	for(size_t i=buf->words-1; i>0; --i){ 
+		rnd=rand()%i; 
+		tmp=buf->index[rnd]; 
+		buf->index[rnd]=buf->index[i]; 
+		buf->index[i]=tmp; 
+	} 
+} 
+int main(void){ 
+	Buffer text=readwords("/usr/share/dict/words"); 
+	Game game={0,{[0 ... 6] = 0}}; 
+	int ch; 
+	srand(time(NULL)); 
+	shuffle(&text); 
+	size_t word=0; 
+	char *guess=NULL; 
+	do{ 
+		char *unknown=text.buffer+text.index[word]; 
+		size_t len=strlen(unknown); 
+		guess=realloc(guess, len+1); 
+		for(int i=0; i<len; ++i) guess[i]='_'; 
+		guess[len]=0; 
+		do{ 
+			display(&game, guess); 
+			ch=getch(); 
+			if(strchr(unknown, ch)) 
+				for(size_t i=0; i<len; ++i){ if(ch==unknown[i]) guess[i]=ch; } 
+			else if(!strchr(game.ws, ch)){ game.ws[game.wg++]=ch; } 
+		}while(strcmp(unknown, guess) && ch!=('d' & 0x1f) && ch!=EOF && game.wg<6); 
+		display(&game, unknown); 
+		if(strcmp(unknown, guess)) printf("You lost.\n"); 
+		else printf("You won! With %d misses.\n",game.wg); 
+		if(ch==EOF || ch==('d' & 0x1f)) break; 
+		printf("Try again (Y/n)? "); 
+		ch=getch(); 
+		game.wg=0; 
+		for(size_t i=0; i<7; ++i) game.ws[i]=0; 
+		++word; 
+		word %= text.words; 
+	}while(tolower(ch)!='n'); 
+	printf("\ncoded by R3DHULK\n"); 
+} 
