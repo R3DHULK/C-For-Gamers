@@ -51,7 +51,7 @@ int main()
         }
 
         // Get user input
-        printf("What do you want to do? ");
+        printf("What do you want to do? (type help for commands)");
         fgets(input, 100, stdin);
         strtok(input, "\n"); // Remove newline character
 
